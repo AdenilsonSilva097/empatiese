@@ -102,6 +102,7 @@ const FormLogin: React.FC = () => {
           buttonText="Continuar com Google"
           onSuccess={responseGoogle}
           cookiePolicy="single_host_origin"
+          className="google-login-button"
         />
       </Form>
       <Snackbar

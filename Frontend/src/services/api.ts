@@ -4,7 +4,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_SERVER_TEST === "ON"
-    ? "http://localhost:3001"
+    ? "http://192.168.0.110:3001"
     : "insert your server url here"
 });
 

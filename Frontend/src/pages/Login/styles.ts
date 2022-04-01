@@ -56,7 +56,7 @@ const LoginFormContainer = styled.div`
     border-radius: 25px;
     background-color: ${(props) => props.theme.colors.background};
     width: 90%;
-    height: 75%;
+    height: 80%;
     padding: 15px 5px;
     position: fixed;
     top: 80px;
@@ -113,6 +113,10 @@ const LoginFormContent = styled.div`
       @media (max-width: ${windowWidth.tablet}) {
         width: 50%;
       }
+    }
+
+    .google-login-button {
+      min-width: 200px;
     }
   }
 `;

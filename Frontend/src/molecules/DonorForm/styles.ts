@@ -46,6 +46,16 @@ const FormFields = styled.div`
     flex-basis: 1;
   }
 
+  @media (max-width: ${windowWidth.mobile.large}) {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+
+    > * {
+      width: 100% !important;
+    }
+  }
+
 `;
 
 export {

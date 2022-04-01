@@ -1,7 +1,7 @@
 import React from "react";
 
 import DashboardIcon from "../../assets/dashboardIcon.svg";
-import IssuanceIcon from "../../assets/issuanceIcon.svg";
+import IssueIcon from "../../assets/issuanceIcon.svg";
 import MessengerIcon from "../../assets/messengerIcon.svg";
 import RegisterIcon from "../../assets/registerIcon.svg";
 import ReportsIcon from "../../assets/reportsIcon.svg";
@@ -10,18 +10,76 @@ import SidebarMenu from "../../atoms/SidebarMenu";
 import EmpatieseLogotipo from "../../atoms/EmpatieseLogotipo";
 
 import { SidebarContainer, SidebarMenusContainer } from "./styles";
+import api from "../../services/api";
 
-const Sidebar: React.FC = () => (
-  <SidebarContainer id="sidebar">
-    <EmpatieseLogotipo color="secondary" />
-    <SidebarMenusContainer>
-      <SidebarMenu srcIcon={DashboardIcon} title="Início" link="dashboard" />
-      <SidebarMenu srcIcon={RegisterIcon} title="Cadastros" link="registers" />
-      <SidebarMenu srcIcon={IssuanceIcon} title="Emissão" link="issue" />
-      <SidebarMenu srcIcon={ReportsIcon} title="Relatórios" link="reports" />
-      <SidebarMenu srcIcon={MessengerIcon} title="Mensageiro" link="messenger" />
-    </SidebarMenusContainer>
-  </SidebarContainer>
-);
+const menus = [
+  {
+    title: "Início",
+    icon: DashboardIcon,
+    link: "dashboard"
+  },
+  {
+    title: "Cadastros",
+    icon: RegisterIcon,
+    link: "register"
+  },
+  {
+    title: "Emissão",
+    icon: IssueIcon,
+    link: "issue"
+  },
+  {
+    title: "Relatórios",
+    icon: ReportsIcon,
+    link: "reports"
+  },
+  {
+    title: "Mensageiro",
+    icon: MessengerIcon,
+    link: "messenger"
+  }
+];
+
+const Sidebar: React.FC = () => {
+
+  const [currentApplications, setCurrentApplications] = React.useState<any[]>([]);
+
+  React.useLayoutEffect(() => {
+    (async () => {
+      const { data: permissions } = await api.get("/permission-group-items");
+      const { data: applicationsData } = await api.get("/applications");
+
+      const loggedUser = JSON.parse(localStorage.getItem("@user")!);
+
+      const userPermissions = permissions.filter(
+        (value: any) => value.permissionGroup === loggedUser.permissionGroup
+      );
+
+      const applications = userPermissions.map((element: any) => applicationsData.find(
+        (value: any) => value.id === element.application
+      ));
+
+      setCurrentApplications(applications);
+    })();
+  }, []);
+
+  if (!currentApplications) return <div>Aguarde...</div>;
+
+  return (
+    <SidebarContainer id="sidebar">
+      <EmpatieseLogotipo color="secondary" />
+      <SidebarMenusContainer>
+        {currentApplications.map((application: any) => {
+
+          const app = menus.find((value: any) => value.title === application.name);
+
+          return (
+            <SidebarMenu key={app?.title} srcIcon={app!.icon} title={app!.title} link={app!.link} />
+          );
+        })}
+      </SidebarMenusContainer>
+    </SidebarContainer>
+  );
+};
 
 export default Sidebar;

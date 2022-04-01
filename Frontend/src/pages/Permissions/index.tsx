@@ -4,16 +4,17 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 
 import SubmitButton from "../../atoms/SubmitButton";
+import Snackbar from "../../atoms/Snackbar";
 
 import PageContent from "../../molecules/PageContent";
 
+import Yup from "../../libraries/yup";
+import { Edit } from "../../libraries/mui/icons";
 import {
   Table, TableHead, TableBody, TableRow, TableCell,
-  IconButton, Dialog, DialogTitle, TextField, FormControl,
+  IconButton, Dialog, DialogTitle, FormControl,
   InputLabel, Select, MenuItem, FormHelperText
 } from "../../libraries/mui/components";
-import { Edit } from "../../libraries/mui/icons";
-import Yup from "../../libraries/yup";
 
 import { handleErrorMessage } from "../../helpers/utils";
 
@@ -35,6 +36,8 @@ const Permissions: React.FC = () => {
   const [users, setUsers] = React.useState<any[]>([]);
   const [currentUser, setCurrentUser] = React.useState<any>({});
   const [permissions, setPermissions] = React.useState<any[]>([]);
+  const [permissionChanged, setPermissionChanged] = React.useState(false);
+  const [snackbarOpen, setSnackbarOpen] = React.useState(false);
 
   const {
     control, setValue, handleSubmit, formState: { errors: formErrors }, reset
@@ -50,41 +53,47 @@ const Permissions: React.FC = () => {
 
   const handleEditButtonClick = (user: any) => {
     setCurrentUser(user);
-    console.log(user);
     setOpen(true);
+    setValue("permission", user.permissionGroup);
   };
 
   const handlePermissionChange = (newValue: string) => {
     setValue("permission", newValue);
   };
 
-  const handleSubmitForm: SubmitHandler<IFormInputs> = (data: IFormInputs) => {
+  const handleSubmitForm: SubmitHandler<IFormInputs> = async (data: IFormInputs) => {
     const { permission } = data;
     const { id } = currentUser;
 
-    api.patch(`/users/${id}`, { permission })
-      .then(() => {
-        console.log("entrou aqui");
-        setOpen(false);
-        reset();
-      })
-      .catch(() => {
-        setOpen(false);
-        reset();
-      });
+    try {
+      await api.patch(`/users/${id}`, { permissionGroup: permission });
+      setOpen(false);
+      reset();
+      setPermissionChanged(true);
+    } catch (error) {
+      setPermissionChanged(false);
+    } finally {
+      setSnackbarOpen(true);
+    }
   };
 
   React.useEffect(() => {
     (async () => {
       const { data: usersData } = await api.get("/users");
-
-      setUsers(usersData);
-
       const { data: permissionsData } = await api.get("/permission-groups");
 
+      const usersWithPermissionGroupName = usersData.map((user: any) => (
+        {
+          ...user,
+          permissionGroupName: permissionsData.find(
+            (permission: any) => permission.id === user.permissionGroup
+          ).name
+        }));
+
+      setUsers(usersWithPermissionGroupName);
       setPermissions(permissionsData);
     })();
-  }, []);
+  }, [open]);
 
   return (
     <PageContent title="Permissões">
@@ -104,7 +113,7 @@ const Permissions: React.FC = () => {
                 {index + 1}
               </TableCell>
               <TableCell align="left">{user.name}</TableCell>
-              <TableCell align="left">{user.permissionGroup}</TableCell>
+              <TableCell align="left">{user.permissionGroupName}</TableCell>
               <TableCell align="right">
                 <IconButton onClick={() => handleEditButtonClick(user)}>
                   <Edit fontSize="small" />
@@ -128,26 +137,40 @@ const Permissions: React.FC = () => {
             defaultValue=""
             render={({ field }) => (
               <FormControl error={!!formErrors.permission} className="field" sx={{ width: "200px" }}>
-                <InputLabel id="frequency-select">Frequência</InputLabel>
+                <InputLabel id="permission-select">Permissão</InputLabel>
                 <Select
                   {...field}
-                  labelId="frequency-select"
-                  label="Frequência"
+                  labelId="permission-select"
+                  label="Permissão"
                   error={!!formErrors.permission}
                   onChange={(e) => handlePermissionChange(e.target.value)}
                 >
                   {permissions.map((permission) => (
-                    <MenuItem key={permission.id} value={permission.id}>{permission.name}</MenuItem>
+                    <MenuItem key={permission.id} value={permission.id}>
+                      {permission.name}
+                    </MenuItem>
                   ))}
                 </Select>
                 {!!formErrors.permission
-                  && <FormHelperText>{handleErrorMessage(formErrors.permission)}</FormHelperText>}
+                  && (
+                  <FormHelperText>
+                    {
+                  handleErrorMessage(formErrors.permission)
+}
+                  </FormHelperText>
+                  )}
               </FormControl>
             )}
           />
           <SubmitButton text="Confirmar" />
         </Styled.FormContainer>
       </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        message={permissionChanged ? "Permissão alterada com sucesso!" : "Erro ao alterar permissão"}
+        onClose={() => setSnackbarOpen(false)}
+        severity={permissionChanged ? "success" : "error"}
+      />
     </PageContent>
   );
 };
